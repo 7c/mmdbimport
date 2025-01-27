@@ -1,0 +1,16 @@
+{
+    "metadata": {
+      "database_type": "",  
+      "description": {
+        "": "Description"   
+      },
+      "languages": ["en", "en"],  
+      "binary_format_major_version": 1  
+    },
+    "records": [
+      {
+        "network": "invalid-cidr",  
+        "data": {}  
+      }
+    ]
+  }

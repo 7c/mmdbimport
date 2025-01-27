@@ -1,0 +1,24 @@
+{
+    "metadata": {
+      "database_type": "City",
+      "description": {
+        "en": "City Database"
+      }
+    },
+    "records": [
+      {
+        "network": "1.1.1.0/24",
+        "data": {
+          "city": "Los Angeles",
+          "country": "US",
+          "locations": [
+            {"lat": 34.0522, "lon": -118.2437}
+          ],
+          "properties": {
+            "timezone": "America/Los_Angeles",
+            "accuracy": 95
+          }
+        }
+      }
+    ]
+  }

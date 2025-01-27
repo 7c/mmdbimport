@@ -1,0 +1,42 @@
+{
+    "metadata": {
+      "database_type": "City",
+      "description": {
+        "en": "City Database",
+        "es": "Base de datos de ciudades"
+      },
+      "languages": ["en", "es"],
+      "binary_format_major_version": 2,
+      "build_epoch": 1675209600
+    },
+    "records": [
+      {
+        "network": "1.1.1.0/24",
+        "data": {
+          "city": "Los Angeles",
+          "country": "US",
+          "locations": [
+            {"lat": 34.0522, "lon": -118.2437}
+          ],
+          "properties": {
+            "timezone": "America/Los_Angeles",
+            "accuracy": 95
+          }
+        }
+      },
+      {
+        "network": "2400:6180:100:d0::924:9001/64",
+        "data": {
+          "city": "Los Angeles",
+          "country": "US",
+          "locations": [
+            {"lat": 34.0522, "lon": -118.2437}
+          ],
+          "properties": {
+            "timezone": "America/Los_Angeles",
+            "accuracy": 95
+          }
+        }
+      }
+    ]
+  }
