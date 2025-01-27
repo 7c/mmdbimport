@@ -1,6 +1,19 @@
 # mmdb-import 
 This tool is used to import a JSON file into a ([MaxMind DB file format](https://github.com/maxmind/MaxMind-DB)). This tool can import JSON, validate JSON and output existing mmdb file and their metadata.
 
+## Installation
+Easy way to install this tool is to use `go install` command.
+```bash
+go install github.com/7c/mmdbimport@latest
+```
+
+## Build
+If you want to build this tool from source, you can use `make` command.
+```bash
+$ make build
+$ bin/mmdbimport -h
+```
+
 ## Usage
 ```
 usage: mmdbimport [<flags>]
