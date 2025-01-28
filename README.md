@@ -4,7 +4,8 @@ This tool is used to import a JSON file into a ([MaxMind DB file format](https:/
 ## Installation
 Easy way to install this tool is to use `go install` command.
 ```bash
-go install github.com/7c/mmdbimport@latest
+go clean -cache
+go install github.com/7c/mmdbimport@v0.0.2
 ```
 
 ## Build
