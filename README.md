@@ -27,6 +27,7 @@ Flags:
   -v, --verify=VERIFY         Verify and display MMDB file information
   -V, --verify-verbose=VERIFY-VERBOSE  
                               Verify and display MMDB file information
+  --json                      Output in JSON format with -v|-V flag
   -o, --output="output.mmdb"  Output MMDB file path
   -r, --record-size=28        Record size (24, 28, or 32)
 ```
@@ -37,9 +38,11 @@ this tool need a valid json file with proper format, it does validate the format
 $ mmdbimport -i etc/input.ok.json -o output.mmdb
 ```
 
+this command will check(-c) the json file and build(-o) the mmdb file. It will exit with 0 if the json file is valid and the mmdb file is built successfully, otherwise it will exit with 1 and will show the error message.
 
 ## viewing existing mmdb files
-if you use '-V' flag, it will show all the records in the mmdb file and their metadata.
+if you use '-V' flag, it will show all the records in the mmdb file and their metadata. You can use '-json' flag to get the output in json format. Viewing the mmdb file also validates the records and whole mmdb file.
+
 ```bash
 $ mmdbimport -v etc/GeoIP2-City-Test.mmdb
 MMDB file: etc/GeoIP2-City-Test.mmdb
@@ -60,6 +63,27 @@ Metadata:
 
 Statistics:
   Total Networks: 248
+
+$ mmdbimport -v etc/GeoIP2-City-Test.mmdb --json
+{
+  "filepath": "etc/GeoIP2-City-Test.mmdb",
+  "binary_format": "2.0",
+  "ip_version": 6,
+  "record_size": 28,
+  "node_count": 1542,
+  "database_type": "GeoIP2-City",
+  "description": {
+    "en": "GeoIP2 City Test Database (fake GeoIP2 data, for example purposes only)",
+    "zh": "小型数据库"
+  },
+  "languages": [
+    "en",
+    "zh"
+  ],
+  "build_time": "2024-11-21T13:33:48-05:00",
+  "build_time_age": 5810772,
+  "total_networks": 248
+}
 ```
 
 ## other mmdbtools

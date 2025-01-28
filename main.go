@@ -248,6 +248,9 @@ func main() {
 		Short('V').
 		ExistingFile()
 
+	jsonOutput := app.Flag("json", "Output in JSON format").
+		Bool()
+
 	outputFile := app.Flag("output", "Output MMDB file path").
 		Short('o').
 		Default("output.mmdb").
@@ -297,14 +300,14 @@ func main() {
 
 	// Handle verify mode
 	if *verifyFile != "" {
-		if err := verifyMMDBFile(*verifyFile, false); err != nil {
+		if err := verifyMMDBFile(*verifyFile, false, *jsonOutput); err != nil {
 			log.Fatal(errorColor(fmt.Sprintf("Error verifying MMDB file: %v", err)))
 		}
 		os.Exit(0)
 	}
 	// Handle verify verbose mode
 	if *verifyVerbose != "" {
-		if err := verifyMMDBFile(*verifyVerbose, true); err != nil {
+		if err := verifyMMDBFile(*verifyVerbose, true, *jsonOutput); err != nil {
 			log.Fatal(errorColor(fmt.Sprintf("Error verifying MMDB file: %v", err)))
 		}
 		os.Exit(0)
@@ -810,62 +813,115 @@ func validateDataStructureCollectErrors(data interface{}, path string, ve *Valid
 	}
 }
 
-// Add new function to verify MMDB file
-func verifyMMDBFile(filepath string, verbose bool) error {
-	// Open the MMDB file
+// Add struct for JSON output
+type VerifyOutput struct {
+	Filepath      string            `json:"filepath"`
+	BinaryFormat  string            `json:"binary_format"`
+	IPVersion     int               `json:"ip_version"`
+	RecordSize    int               `json:"record_size"`
+	NodeCount     uint              `json:"node_count"`
+	DatabaseType  string            `json:"database_type"`
+	Description   map[string]string `json:"description"`
+	Languages     []string          `json:"languages"`
+	BuildTime     string            `json:"build_time"`
+	BuildTimeAge  int               `json:"build_time_age"`
+	TotalNetworks int               `json:"total_networks"`
+	Networks      []NetworkEntry    `json:"networks,omitempty"`
+}
+
+type NetworkEntry struct {
+	Position int         `json:"position"`
+	Network  string      `json:"network"`
+	Data     interface{} `json:"data"`
+}
+
+func verifyMMDBFile(filepath string, verbose bool, jsonOutput bool) error {
 	reader, err := maxminddb.Open(filepath)
 	if err != nil {
 		return fmt.Errorf("opening MMDB file: %w", err)
 	}
 	defer reader.Close()
 
-	// Print file info
-	fmt.Printf("%s %s\n", infoColor("MMDB file:"), filepath)
-
 	// Get metadata
 	metadata := reader.Metadata
-
-	fmt.Printf("\n%s\n", infoColor("Database Information:"))
-	fmt.Printf("  Binary Format: %s\n", successColor(fmt.Sprintf("%d.%d",
-		metadata.BinaryFormatMajorVersion,
-		metadata.BinaryFormatMinorVersion)))
-	fmt.Printf("  IP Version: %s\n", successColor(fmt.Sprintf("%d", metadata.IPVersion)))
-	fmt.Printf("  Record Size: %s bits\n", successColor(fmt.Sprintf("%d", metadata.RecordSize)))
-	fmt.Printf("  Node Count: %s\n", successColor(fmt.Sprintf("%d", metadata.NodeCount)))
-	// fmt.Printf("  Search Tree Size: %s bytes\n", successColor(fmt.Sprintf("%d", metadata.)))
-
-	fmt.Printf("\n%s\n", infoColor("Metadata:"))
-	fmt.Printf("  Database Type: %s\n", successColor(metadata.DatabaseType))
-
-	fmt.Printf("  Description:\n")
-	for lang, desc := range metadata.Description {
-		fmt.Printf("    %s: %s\n", successColor(lang), desc)
-	}
-
-	if len(metadata.Languages) > 0 {
-		fmt.Printf("  Languages: %s\n", successColor(joinStrings(metadata.Languages)))
-	}
-
 	buildTime := time.Unix(int64(metadata.BuildEpoch), 0)
-	fmt.Printf("  Build Timestamp: %s\n", successColor(buildTime.Format(time.RFC3339)))
-
-	// Try to get some statistics about the data
 	networks := countNetworks(reader)
-	fmt.Printf("\n%s\n", infoColor("Statistics:"))
-	fmt.Printf("  Total Networks: %s\n", successColor(fmt.Sprintf("%d", networks)))
-
-	// Add networks listing in verbose mode
-	if verbose {
-		fmt.Printf("\n%s\n", infoColor("Networks:"))
-		position := 0
-		for result := range reader.Networks() {
-			var record interface{}
-			err := result.Decode(&record)
-			if err != nil {
-				continue
+	if jsonOutput {
+		output := VerifyOutput{
+			Filepath:     filepath,
+			BinaryFormat: fmt.Sprintf("%d.%d", metadata.BinaryFormatMajorVersion, metadata.BinaryFormatMinorVersion),
+			IPVersion:    int(metadata.IPVersion),
+			RecordSize:   int(metadata.RecordSize),
+			NodeCount:    metadata.NodeCount,
+			DatabaseType: metadata.DatabaseType,
+			Description:  metadata.Description,
+			Languages:    metadata.Languages,
+			BuildTime:    buildTime.Format(time.RFC3339),
+			// Build time age in seconds
+			BuildTimeAge:  int(time.Since(buildTime).Seconds()),
+			TotalNetworks: networks,
+		}
+		if verbose {
+			output.Networks = []NetworkEntry{}
+			for result := range reader.Networks() {
+				var record interface{}
+				if err := result.Decode(&record); err != nil {
+					continue
+				}
+				output.Networks = append(output.Networks, NetworkEntry{
+					Network: result.Prefix().String(),
+					Data:    record,
+				})
 			}
-			fmt.Printf("[%d]  %s: %v\n", position, successColor(result.Prefix()), record)
-			position++
+		}
+		// output nicely formatted json
+		jsonOutput, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshalling JSON: %w", err)
+		}
+
+		fmt.Printf("%s\n", string(jsonOutput))
+	} else {
+		// Print file info
+		fmt.Printf("%s %s\n", infoColor("MMDB file:"), filepath)
+
+		fmt.Printf("  Build Timestamp: %s\n", successColor(buildTime.Format(time.RFC3339)))
+
+		fmt.Printf("\n%s\n", infoColor("Database Information:"))
+		fmt.Printf("  Binary Format: %s\n", successColor(fmt.Sprintf("%d.%d",
+			metadata.BinaryFormatMajorVersion,
+			metadata.BinaryFormatMinorVersion)))
+		fmt.Printf("  IP Version: %s\n", successColor(fmt.Sprintf("%d", metadata.IPVersion)))
+		fmt.Printf("  Record Size: %s bits\n", successColor(fmt.Sprintf("%d", metadata.RecordSize)))
+		fmt.Printf("  Node Count: %s\n", successColor(fmt.Sprintf("%d", metadata.NodeCount)))
+		// fmt.Printf("  Search Tree Size: %s bytes\n", successColor(fmt.Sprintf("%d", metadata.)))
+
+		fmt.Printf("\n%s\n", infoColor("Metadata:"))
+		fmt.Printf("  Database Type: %s\n", successColor(metadata.DatabaseType))
+
+		fmt.Printf("  Description:\n")
+		for lang, desc := range metadata.Description {
+			fmt.Printf("    %s: %s\n", successColor(lang), desc)
+		}
+
+		if len(metadata.Languages) > 0 {
+			fmt.Printf("  Languages: %s\n", successColor(joinStrings(metadata.Languages)))
+		}
+		fmt.Printf("\n%s\n", infoColor("Statistics:"))
+		fmt.Printf("  Total Networks: %s\n", successColor(fmt.Sprintf("%d", networks)))
+		// Add networks listing in verbose mode
+		if verbose {
+			fmt.Printf("\n%s\n", infoColor("Networks:"))
+			position := 0
+			for result := range reader.Networks() {
+				var record interface{}
+				err := result.Decode(&record)
+				if err != nil {
+					continue
+				}
+				fmt.Printf("[%d]  %s: %v\n", position, successColor(result.Prefix()), record)
+				position++
+			}
 		}
 	}
 
@@ -880,7 +936,7 @@ func countNetworks(db *maxminddb.Reader) int {
 		record := struct {
 			Domain string `maxminddb:"connection_type"`
 		}{}
-
+		// we should iterate over the networks, to validate the data
 		err := result.Decode(&record)
 		if err != nil {
 			log.Panic(err)
