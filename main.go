@@ -830,9 +830,8 @@ type VerifyOutput struct {
 }
 
 type NetworkEntry struct {
-	Position int         `json:"position"`
-	Network  string      `json:"network"`
-	Data     interface{} `json:"data"`
+	Network string      `json:"network"`
+	Data    interface{} `json:"data"`
 }
 
 func verifyMMDBFile(filepath string, verbose bool, jsonOutput bool) error {

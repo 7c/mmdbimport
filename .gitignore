@@ -1,4 +1,5 @@
 output.mmdb
 vendor/
 demo/
-bin/
+bin/# Added by goreleaser init:
+dist/
